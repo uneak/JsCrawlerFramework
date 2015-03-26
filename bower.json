@@ -1,0 +1,26 @@
+{
+  "name": "jscrawler-framework",
+  "version": "0.0.0",
+  "authors": [
+    "Marc Galoyer <mgaloyer@uneak.fr>"
+  ],
+  "description": "Javascript Framework",
+  "main": "dist/js/js-crawler.js",
+  "keywords": [
+    "javascript",
+    "framework",
+    "crawler",
+    "one page",
+    "seo",
+    "search engine"
+  ],
+  "license": "MIT",
+  "homepage": "http://www.uneak.fr",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
