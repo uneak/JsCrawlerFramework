@@ -8,7 +8,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-npm2bower-sync')
 
 
-    var jsSrc = ['src/js/router.js', 'src/js/crawler.js', 'src/js/js-crawler.js']
+    var jsSrc = ['src/js/utils.js', 'src/js/router.js', 'src/js/crawler.js', 'src/js/js-crawler.js']
     var srcHintOptions = grunt.file.readJSON( "src/js/.jshintrc" );
 
 
@@ -30,7 +30,7 @@ module.exports = function(grunt) {
         },
         concat: {
             options: {
-                separator: ''
+                separator: '\n\n'
             },
             dist: {
                 src: jsSrc,
@@ -102,7 +102,8 @@ module.exports = function(grunt) {
     })
 
 
-    grunt.registerTask('dev', ['sass:dist', 'jshint:dev', 'concat:dist'])
+    //grunt.registerTask('dev', ['sass:dist', 'jshint:dev', 'concat:dist'])
+    grunt.registerTask('dev', ['sass:dist', 'concat:dist'])
     grunt.registerTask('dist', ['sync', 'dev', 'jshint:dist', 'uglify:dist'])
 
     grunt.registerTask('default', ['dev', 'watch'])
