@@ -43,15 +43,75 @@ var getElementByClass = function (ele, cls) {
     return null;
 };
 
+var EventDispatcher = function () {
+    this.listeners = [];
+    this.listenersLength = 0;
+};
+
+EventDispatcher.prototype.addEventListener = function( context, observer, callback ){
+    this.listeners[this.listenersLength] = {context:context, observer:observer, callback:callback};
+    this.listenersLength++;
+    return this;
+};
+
+EventDispatcher.prototype.removeEventListenerByObserver = function( observer ){
+    for(var i = 0; i < this.listenersLength; i++){
+        if (this.listeners[i].observer === observer) {
+            // TODO: remove listener
+            // this.listeners.splice(index, 1);
+            // this.listenersLength--;
+        }
+    }
+    return this;
+};
+
+EventDispatcher.prototype.removeEventListenerByContext = function( context ){
+    for(var i = 0; i < this.listenersLength; i++){
+        if (this.listeners[i].context === context) {
+            // TODO: remove listener
+            // this.listeners.splice(index, 1);
+            // this.listenersLength--;
+        }
+    }
+    return this;
+};
+
+EventDispatcher.prototype.removeEventListenerByCallback = function( callback ){
+    for(var i = 0; i < this.listenersLength; i++){
+        if (this.listeners[i].callback === callback) {
+            // TODO: remove listener
+            // this.listeners.splice(index, 1);
+            // this.listenersLength--;
+        }
+    }
+    return this;
+};
+
+
+EventDispatcher.prototype.fireEvent = function( context, event ){
+    event = event || {};
+    for(var i=0; i < this.listenersLength; i++) {
+        if (this.listeners[i].context === context) {
+            this.listeners[i].callback.call(this.listeners[i].observer, event);
+        }
+    }
+    return this;
+};
+
 var Router = function (root) {
+    this.super.constructor.call(this);
+
     this.routesLength = 0;
     this.routes = [];
     this.mode = !!(window.history.pushState) ? "history" : "hash";
     this.hash = "#!";
     this.root = root ? root.replace(/^\/?(.*?)\/?$/, "/$1/") : "/";
 
-    this.onChange = null;
 };
+Router.prototype = new EventDispatcher;
+Router.prototype.constructor = Router;
+Router.prototype.super = EventDispatcher.prototype;
+
 
 Router.prototype.getFragment = function () {
     var fragment = "";
@@ -67,14 +127,16 @@ Router.prototype.getFragment = function () {
     return fragment;
 };
 
-Router.prototype.add = function (regExp, controllerFn) {
+
+Router.prototype.add = function (controller, regExp) {
     this.routes[this.routesLength] = {
-        route: regExp,
-        controller: controllerFn
+        controller: controller,
+        route: regExp
     };
     this.routesLength++;
     return this;
 };
+
 
 Router.prototype.check = function (fragment) {
     var pFragment = fragment || this.getFragment();
@@ -82,12 +144,7 @@ Router.prototype.check = function (fragment) {
         var match = pFragment.match(this.routes[i].route);
         if (match) {
             match.shift();
-
-            if (this.onChange) {
-                this.onChange.call(undefined, match, this.routes[i].controller);
-            }
-
-            //this.routes[i].controller.apply({}, match);
+            this.fireEvent("matchedRoute", {controller: this.routes[i].controller, route: this.routes[i].route, fragment: pFragment, match: match});
             return this;
         }
     }
@@ -120,29 +177,108 @@ Router.prototype.navigate = function (path) {
 };
 
 
-Router.prototype.loadPage = function (url) {
 
-    self.currentUrl = url;
-    if (self.xhr && self.xhr.readyState != 0)
-        self.xhr.abort();
 
-    self.xhr.open("GET", self.currentUrl, true);
-    self.xhr.send();
-    self.startLoading("MAIN");
+var LoaderModel = function () {
+    console.log(this.super.constructor);
+    this.super.constructor.call(this);
 
+    var self = this;
+    this.currentRoute = null;
+    this.xhr = this.getXHR();
+
+
+    this.xhr.onabort = function(event) {
+        self.fireEvent("onAbort", {xhr: this, event: event, route: self.currentRoute});
+    };
+
+    this.xhr.onerror = function(event) {
+        self.fireEvent("onError", {xhr: this, event: event, route: self.currentRoute});
+    };
+
+    this.xhr.onload = function(event) {
+        self.fireEvent("onLoad", {xhr: this, event: event, route: self.currentRoute});
+    };
+
+    this.xhr.onloadend = function(event) {
+        self.fireEvent("onLoadEnd", {xhr: this, event: event, route: self.currentRoute});
+        self.checkComplete();
+    };
+
+    this.xhr.onloadstart = function(event) {
+        self.fireEvent("onLoadStart", {xhr: this, event: event, route: self.currentRoute});
+    };
+
+    this.xhr.onprogress = function(event) {
+        var percentComplete = 0;
+        if (event.lengthComputable) {
+            percentComplete = event.loaded / event.total;
+        }
+        self.fireEvent("onProgress", {xhr: this, perc: percentComplete, event: event, route: self.currentRoute});
+    };
+
+    this.xhr.onreadystatechange = function(event) {
+        self.fireEvent("onReadyStateChange", {xhr: this, event: event, route: self.currentRoute});
+    };
+
+    this.xhr.ontimeout = function(event) {
+        self.fireEvent("onTimeout", {xhr: this, event: event, route: self.currentRoute});
+    };
+
+
+
+};
+//LoaderModel.prototype = new Model;
+//LoaderModel.prototype.super = Model.prototype;
+
+
+
+LoaderModel.prototype.getXHR = function() {
+    if (window.XMLHttpRequest || window.ActiveXObject) {
+        if (window.ActiveXObject) {
+            try {
+                return new ActiveXObject("Msxml2.XMLHTTP");
+            } catch (e) {
+                return new ActiveXObject("Microsoft.XMLHTTP");
+            }
+        } else {
+            return new XMLHttpRequest();
+        }
+    }
+    return null;
+};
+
+
+
+LoaderModel.prototype.load = function (route) {
+    this.currentRoute = route;
+
+    if (this.xhr && this.xhr.readyState != 0) {
+        this.xhr.abort();
+    }
+
+    this.xhr.open("GET", this.currentRoute.fragment, true);
+    this.xhr.send();
+};
+
+
+LoaderModel.prototype.checkComplete = function() {
+    if (this.xhr.readyState == 4 && this.xhr.status == 200) {
+        this.fireEvent("dataLoaded", {xhr: this.xhr, route: this.currentRoute});
+    }
 };
 
 var Crawler = function (html) {
     this.__html__ = html;
     this.__cache__ = [];
 
-    var varRegExp = /<!--\s+UNEAK:BEGIN:(.*?)\s+-->/gi;
+    var varRegExp = /<!--\s+crawler:begin:(.*?)\s+-->/gi;
     var varMatch;
 
     while ((varMatch = varRegExp.exec(this.__html__)) != null) {
 
         var varName = varMatch[1];
-        var blockRegExp = new RegExp("<!--\\s+UNEAK:END:"+varName+"\\s+-->", "i");
+        var blockRegExp = new RegExp("<!--\\s+crawler:end:"+varName+"\\s+-->", "i");
         blockRegExp.lastIndex = varRegExp.lastIndex;
         var blockMatch;
 
@@ -175,27 +311,125 @@ Crawler.prototype.toString = function() {
     return this.__html__;
 };
 
+var Controller = function () {
+    this.super.constructor.call(this);
+};
+
+Controller.prototype = new EventDispatcher;
+Controller.prototype.constructor = Controller;
+Controller.prototype.super = EventDispatcher.prototype;
+
+Controller.prototype.onData = function (event) {
+};
+
+var Model = function () {
+    console.log("Model class "),
+    console.log(this.super.constructor),
+    this.super.constructor.call(this);
+};
+
+Model.prototype = new EventDispatcher;
+//Model.prototype.constructor = Model;
+Model.prototype.super = EventDispatcher.prototype;
+
+var View = function () {
+    this.super.constructor.call(this);
+};
+
+View.prototype = new EventDispatcher;
+View.prototype.constructor = View;
+View.prototype.super = EventDispatcher.prototype;
+
+var Controllers = function (app) {
+    this.__app__ = app;
+};
+
+
+Controllers.prototype.add = function( id, fn, ext ){
+    ext = ext || Controller;
+
+    for (var attr in ext.prototype) { fn.prototype[attr] = ext.prototype[attr]; }
+    fn.prototype.constructor = fn;
+    fn.prototype.super = ext.prototype;
+    fn.prototype.app = this.__app__;
+    this[id] = new fn();
+    return this[id];
+};
+
+
+var Models = function (app) {
+    this.__app__ = app;
+};
+
+
+Models.prototype.add = function( id, fn, ext ){
+    ext = ext || Model;
+
+    //var inst = new ext;
+    //for (var attr in inst) { fn.prototype[attr] = inst[attr]; }
+
+    for (var attr in ext.prototype) { fn.prototype[attr] = ext.prototype[attr]; }
+    fn.prototype.constructor = fn;
+    fn.prototype.super = ext.prototype;
+    fn.prototype.app = this.__app__;
+
+    this[id] = new fn();
+
+    return this[id];
+};
+
+
+var Views = function (app) {
+    this.__app__ = app;
+};
+
+
+Views.prototype.add = function( id, fn, ext ){
+    ext = ext || View;
+    for (var attr in ext.prototype) { fn.prototype[attr] = ext.prototype[attr]; }
+    fn.prototype.constructor = fn;
+    fn.prototype.super = ext.prototype;
+    fn.prototype.app = this.__app__;
+    this[id] = new fn();
+    return this[id];
+};
+
 var JsCrawler = function (rootUrl) {
-    var self = this;
+
+    this.controllers = new Controllers(this);
+    this.models = new Models(this);
+    this.views = new Views(this);
+
+    var loader = this.models.add("loader", LoaderModel);
+    loader.addEventListener("dataLoaded", this, this.onDataLoaded);
+
 
     this.router = new Router(rootUrl);
-    this.router.onChange = function(match, controller) {
-        console.log(self);
-        console.log(match);
-
-        controller.apply({}, match);
-    };
-
-
-    this.xhr = this.getXHR();
-
-    this.xhr.onreadystatechange = function() {
-        if (this.xhr.readyState == 4 && this.xhr.status == 200) {
-            console.log(this.xhr.responseText);
-        }
-    };
-
+    this.router.addEventListener("matchedRoute", this, this.onMatchedRoute);
     this.updateLinks();
+};
+
+
+//JsCrawler.prototype.setDataLoader = function(dataLoader) {
+//    this.dataLoader = dataLoader;
+//    this.dataLoader.addEventListener("dataLoaded", this, this.onDataLoaded);
+//};
+//
+//
+//JsCrawler.prototype.setViewLoader = function(viewLoader) {
+//    this.viewLoader = viewLoader;
+//    this.dataLoader.addEventListener("dataLoaded", this, this.onDataLoaded);
+//};
+
+
+JsCrawler.prototype.onMatchedRoute = function(event) {
+
+    this.models.loader.load(event);
+};
+
+JsCrawler.prototype.onDataLoaded = function(event) {
+    event.crawler = new Crawler(event.xhr.responseText);
+    this.controllers[event.route.controller].onData(event);
 };
 
 
@@ -220,23 +454,5 @@ JsCrawler.prototype.updateLinks = function(root) {
             this.updateLinks(children[i]);
         }
 
-};
-
-
-JsCrawler.prototype.getXHR = function() {
-    if (window.XMLHttpRequest || window.ActiveXObject) {
-        if (window.ActiveXObject) {
-            try {
-                return new ActiveXObject("Msxml2.XMLHTTP");
-            } catch (e) {
-                return new ActiveXObject("Microsoft.XMLHTTP");
-            }
-        } else {
-            return new XMLHttpRequest();
-        }
-    }
-
-    alert("Votre navigateur ne supporte pas l'objet XMLHTTPRequest...");
-    return null;
 };
 

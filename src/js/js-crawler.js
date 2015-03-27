@@ -1,24 +1,39 @@
 var JsCrawler = function (rootUrl) {
-    var self = this;
+
+    this.controllers = new Controllers(this);
+    this.models = new Models(this);
+    this.views = new Views(this);
+
+    var loader = this.models.add("loader", LoaderModel);
+    loader.addEventListener("dataLoaded", this, this.onDataLoaded);
+
 
     this.router = new Router(rootUrl);
-    this.router.onChange = function(match, controller) {
-        console.log(self);
-        console.log(match);
-
-        controller.apply({}, match);
-    };
-
-
-    this.xhr = this.getXHR();
-
-    this.xhr.onreadystatechange = function() {
-        if (this.xhr.readyState == 4 && this.xhr.status == 200) {
-            console.log(this.xhr.responseText);
-        }
-    };
-
+    this.router.addEventListener("matchedRoute", this, this.onMatchedRoute);
     this.updateLinks();
+};
+
+
+//JsCrawler.prototype.setDataLoader = function(dataLoader) {
+//    this.dataLoader = dataLoader;
+//    this.dataLoader.addEventListener("dataLoaded", this, this.onDataLoaded);
+//};
+//
+//
+//JsCrawler.prototype.setViewLoader = function(viewLoader) {
+//    this.viewLoader = viewLoader;
+//    this.dataLoader.addEventListener("dataLoaded", this, this.onDataLoaded);
+//};
+
+
+JsCrawler.prototype.onMatchedRoute = function(event) {
+
+    this.models.loader.load(event);
+};
+
+JsCrawler.prototype.onDataLoaded = function(event) {
+    event.crawler = new Crawler(event.xhr.responseText);
+    this.controllers[event.route.controller].onData(event);
 };
 
 
@@ -43,23 +58,5 @@ JsCrawler.prototype.updateLinks = function(root) {
             this.updateLinks(children[i]);
         }
 
-};
-
-
-JsCrawler.prototype.getXHR = function() {
-    if (window.XMLHttpRequest || window.ActiveXObject) {
-        if (window.ActiveXObject) {
-            try {
-                return new ActiveXObject("Msxml2.XMLHTTP");
-            } catch (e) {
-                return new ActiveXObject("Microsoft.XMLHTTP");
-            }
-        } else {
-            return new XMLHttpRequest();
-        }
-    }
-
-    alert("Votre navigateur ne supporte pas l'objet XMLHTTPRequest...");
-    return null;
 };
 

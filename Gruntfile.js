@@ -8,7 +8,20 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-npm2bower-sync')
 
 
-    var jsSrc = ['src/js/utils.js', 'src/js/observers.js', 'src/js/observable.js', 'src/js/router.js', 'src/js/crawler.js', 'src/js/js-crawler.js']
+    var jsSrc = [
+        'src/js/utils.js',
+        'src/js/event-dispatcher.js',
+        'src/js/router.js',
+        'src/js/loader-model.js',
+        'src/js/crawler.js',
+        'src/js/controller.js',
+        'src/js/model.js',
+        'src/js/view.js',
+        'src/js/controllers.js',
+        'src/js/models.js',
+        'src/js/views.js',
+        'src/js/js-crawler.js'
+    ]
     var srcHintOptions = grunt.file.readJSON( "src/js/.jshintrc" );
 
 

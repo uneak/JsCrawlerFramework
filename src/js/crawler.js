@@ -2,13 +2,13 @@ var Crawler = function (html) {
     this.__html__ = html;
     this.__cache__ = [];
 
-    var varRegExp = /<!--\s+UNEAK:BEGIN:(.*?)\s+-->/gi;
+    var varRegExp = /<!--\s+crawler:begin:(.*?)\s+-->/gi;
     var varMatch;
 
     while ((varMatch = varRegExp.exec(this.__html__)) != null) {
 
         var varName = varMatch[1];
-        var blockRegExp = new RegExp("<!--\\s+UNEAK:END:"+varName+"\\s+-->", "i");
+        var blockRegExp = new RegExp("<!--\\s+crawler:end:"+varName+"\\s+-->", "i");
         blockRegExp.lastIndex = varRegExp.lastIndex;
         var blockMatch;
 

@@ -7,13 +7,10 @@ var Router = function (root) {
     this.hash = "#!";
     this.root = root ? root.replace(/^\/?(.*?)\/?$/, "/$1/") : "/";
 
-
-    this.onChange = null;
 };
-Router.prototype = new Observable;
-Router.prototype.super = Observable.prototype;
-
-
+Router.prototype = new EventDispatcher;
+Router.prototype.constructor = Router;
+Router.prototype.super = EventDispatcher.prototype;
 
 
 Router.prototype.getFragment = function () {
@@ -30,14 +27,16 @@ Router.prototype.getFragment = function () {
     return fragment;
 };
 
-Router.prototype.add = function (regExp, controllerFn) {
+
+Router.prototype.add = function (controller, regExp) {
     this.routes[this.routesLength] = {
-        route: regExp,
-        controller: controllerFn
+        controller: controller,
+        route: regExp
     };
     this.routesLength++;
     return this;
 };
+
 
 Router.prototype.check = function (fragment) {
     var pFragment = fragment || this.getFragment();
@@ -45,14 +44,7 @@ Router.prototype.check = function (fragment) {
         var match = pFragment.match(this.routes[i].route);
         if (match) {
             match.shift();
-
-            this.notify('matchRoute');
-
-            if (this.onChange) {
-                this.onChange.call(undefined, match, this.routes[i].controller);
-            }
-
-            //this.routes[i].controller.apply({}, match);
+            this.fireEvent("matchedRoute", {controller: this.routes[i].controller, route: this.routes[i].route, fragment: pFragment, match: match});
             return this;
         }
     }
@@ -85,14 +77,3 @@ Router.prototype.navigate = function (path) {
 };
 
 
-Router.prototype.loadPage = function (url) {
-
-    self.currentUrl = url;
-    if (self.xhr && self.xhr.readyState != 0)
-        self.xhr.abort();
-
-    self.xhr.open("GET", self.currentUrl, true);
-    self.xhr.send();
-    self.startLoading("MAIN");
-
-};
