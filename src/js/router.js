@@ -1,12 +1,20 @@
 var Router = function (root) {
+    this.super.constructor.call(this);
+
     this.routesLength = 0;
     this.routes = [];
     this.mode = !!(window.history.pushState) ? "history" : "hash";
     this.hash = "#!";
     this.root = root ? root.replace(/^\/?(.*?)\/?$/, "/$1/") : "/";
 
+
     this.onChange = null;
 };
+Router.prototype = new Observable;
+Router.prototype.super = Observable.prototype;
+
+
+
 
 Router.prototype.getFragment = function () {
     var fragment = "";
@@ -37,6 +45,8 @@ Router.prototype.check = function (fragment) {
         var match = pFragment.match(this.routes[i].route);
         if (match) {
             match.shift();
+
+            this.notify('matchRoute');
 
             if (this.onChange) {
                 this.onChange.call(undefined, match, this.routes[i].controller);
