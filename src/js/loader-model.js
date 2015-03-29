@@ -1,88 +1,88 @@
-var LoaderModel = function () {
-    console.log(this.super.constructor);
-    this.super.constructor.call(this);
+var LoaderModel = {
 
-    var self = this;
-    this.currentRoute = null;
-    this.xhr = this.getXHR();
+    constructor: function () {
+        MvcElement.call(this);
 
-
-    this.xhr.onabort = function(event) {
-        self.fireEvent("onAbort", {xhr: this, event: event, route: self.currentRoute});
-    };
-
-    this.xhr.onerror = function(event) {
-        self.fireEvent("onError", {xhr: this, event: event, route: self.currentRoute});
-    };
-
-    this.xhr.onload = function(event) {
-        self.fireEvent("onLoad", {xhr: this, event: event, route: self.currentRoute});
-    };
-
-    this.xhr.onloadend = function(event) {
-        self.fireEvent("onLoadEnd", {xhr: this, event: event, route: self.currentRoute});
-        self.checkComplete();
-    };
-
-    this.xhr.onloadstart = function(event) {
-        self.fireEvent("onLoadStart", {xhr: this, event: event, route: self.currentRoute});
-    };
-
-    this.xhr.onprogress = function(event) {
-        var percentComplete = 0;
-        if (event.lengthComputable) {
-            percentComplete = event.loaded / event.total;
-        }
-        self.fireEvent("onProgress", {xhr: this, perc: percentComplete, event: event, route: self.currentRoute});
-    };
-
-    this.xhr.onreadystatechange = function(event) {
-        self.fireEvent("onReadyStateChange", {xhr: this, event: event, route: self.currentRoute});
-    };
-
-    this.xhr.ontimeout = function(event) {
-        self.fireEvent("onTimeout", {xhr: this, event: event, route: self.currentRoute});
-    };
+        var self = this;
+        this.routeWatch = null;
+        this.xhr = this.getXHR();
 
 
+        this.xhr.onabort = function (event) {
+            self.talk("onAbort."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+        };
 
-};
-//LoaderModel.prototype = new Model;
-//LoaderModel.prototype.super = Model.prototype;
+        this.xhr.onerror = function (event) {
+            self.talk("onError."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+        };
 
+        this.xhr.onload = function (event) {
+            self.talk("onLoad."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+        };
 
+        this.xhr.onloadend = function (event) {
+            self.talk("onLoadEnd."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+            self.checkComplete();
+        };
 
-LoaderModel.prototype.getXHR = function() {
-    if (window.XMLHttpRequest || window.ActiveXObject) {
-        if (window.ActiveXObject) {
-            try {
-                return new ActiveXObject("Msxml2.XMLHTTP");
-            } catch (e) {
-                return new ActiveXObject("Microsoft.XMLHTTP");
+        this.xhr.onloadstart = function (event) {
+            self.talk("onLoadStart."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+        };
+
+        this.xhr.onprogress = function (event) {
+            var percentComplete = 0;
+            if (event.lengthComputable) {
+                percentComplete = event.loaded / event.total;
             }
-        } else {
-            return new XMLHttpRequest();
+            self.talk("onProgress."+self.routeWatch.id, {xhr: this, perc: percentComplete, event: event, route: self.routeWatch});
+        };
+
+        this.xhr.onreadystatechange = function (event) {
+            self.talk("onReadyStateChange."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+        };
+
+        this.xhr.ontimeout = function (event) {
+            self.talk("onTimeout."+self.routeWatch.id, {xhr: this, event: event, route: self.routeWatch});
+        };
+    },
+
+    getXHR: function () {
+        if (window.XMLHttpRequest || window.ActiveXObject) {
+            if (window.ActiveXObject) {
+                try {
+                    return new ActiveXObject("Msxml2.XMLHTTP");
+                } catch (e) {
+                    return new ActiveXObject("Microsoft.XMLHTTP");
+                }
+            } else {
+                return new XMLHttpRequest();
+            }
+        }
+        return null;
+    },
+
+    load: function (routeWatch) {
+
+        if (this.routeWatch !== routeWatch) {
+
+            if (this.xhr.readyState != 0) {
+                this.xhr.abort();
+            }
+
+            this.routeWatch = routeWatch;
+
+            this.xhr.open("GET", this.routeWatch.fragment, true);
+            this.xhr.send();
+        }
+
+    },
+
+    checkComplete: function () {
+        if (this.xhr.readyState == 4 && this.xhr.status == 200) {
+            this.talk("onDataLoaded."+this.routeWatch.id, {xhr: this.xhr, route: this.routeWatch});
+
         }
     }
-    return null;
+
 };
 
-
-
-LoaderModel.prototype.load = function (route) {
-    this.currentRoute = route;
-
-    if (this.xhr && this.xhr.readyState != 0) {
-        this.xhr.abort();
-    }
-
-    this.xhr.open("GET", this.currentRoute.fragment, true);
-    this.xhr.send();
-};
-
-
-LoaderModel.prototype.checkComplete = function() {
-    if (this.xhr.readyState == 4 && this.xhr.status == 200) {
-        this.fireEvent("dataLoaded", {xhr: this.xhr, route: this.currentRoute});
-    }
-};

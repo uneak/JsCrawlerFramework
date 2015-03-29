@@ -1,3 +1,25 @@
+var classCreate = function (prototype) {
+
+    var jsClass = (prototype.hasOwnProperty("constructor")) ? prototype["constructor"] : function () {};
+    for (var attr in prototype) {
+        jsClass.prototype[attr] = prototype[attr];
+    }
+
+    return jsClass;
+}
+
+var classExtends = function (extend, prototype) {
+
+    var jsClass = (prototype.hasOwnProperty("constructor")) ? prototype["constructor"] : function () {};
+    jsClass.prototype = new extend;
+    for (var attr in prototype) {
+        jsClass.prototype[attr] = prototype[attr];
+    }
+
+    return jsClass;
+}
+
+
 var isExternal = function (url) {
     var match = url.match(/^([^:\/?#]+:)?(?:\/\/([^\/?#]*))?([^?#]+)?(\?[^#]*)?(#.*)?/);
     if (typeof match[1] === "string" && match[1].length > 0 && match[1].toLowerCase() !== location.protocol) {
