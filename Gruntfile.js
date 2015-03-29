@@ -10,7 +10,6 @@ module.exports = function(grunt) {
 
     var jsSrc = [
         'src/js/utils.js',
-        'src/js/event-dispatcher.js',
         'src/js/router-view.js',
         'src/js/loader-model.js',
         'src/js/crawler.js',

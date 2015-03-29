@@ -1,7 +1,6 @@
 var LoaderModel = {
 
-    constructor: function () {
-        MvcElement.call(this);
+    _constructor: function () {
 
         var self = this;
         this.routeWatch = null;

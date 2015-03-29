@@ -20,6 +20,7 @@ var classExtends = function (extend, prototype) {
 }
 
 
+
 var isExternal = function (url) {
     var match = url.match(/^([^:\/?#]+:)?(?:\/\/([^\/?#]*))?([^?#]+)?(\?[^#]*)?(#.*)?/);
     if (typeof match[1] === "string" && match[1].length > 0 && match[1].toLowerCase() !== location.protocol) {

@@ -1,30 +1,22 @@
-
 var RouterView = {
 
-    routes: [],
-    routesLength: 0,
+
     mode: !!(window.history.pushState) ? "history" : "hash",
     hash: "#!",
 
-    constructor: function (root) {
-        MvcElement.call(this);
-        this.root = root ? root.replace(/^\/?(.*?)\/?$/, "/$1/") : "/test/jscrawler/";
+    _constructor: function () {
+        this.routes = [];
+        this.routesLength = 0;
+        this.root = "/";
     },
 
-    getFragment: function () {
-        var fragment = "";
-        var re;
-
-        if (this.mode === "history") {
-            re = new RegExp("^(?:" + this.root + ")(.*?)(?:\\?.*)?\\/?$");
-            fragment = decodeURI(location.pathname + location.search).replace(re, "$1");
-        } else {
-            re = new RegExp(".*?" + this.hash + "\\/?(.*?)\\/?(?:\\?.*)\\/?$");
-            fragment = window.location.href.replace(re, "$1");
-        }
-        return fragment;
+    setRoot: function (root) {
+        this.root = root.replace(/^\/?(.*?)\/?$/, "/$1/");
     },
 
+    getRoot: function (root) {
+        return this.root;
+    },
 
     watch: function (regExp, id) {
         this.routes[this.routesLength] = {
@@ -41,7 +33,7 @@ var RouterView = {
             var match = pFragment.match(this.routes[i].route);
             if (match) {
                 match.shift();
-                this.talk("onRouteChange."+this.routes[i].id, {
+                this.talk("onRouteChange." + this.routes[i].id, {
                     id: this.routes[i].id,
                     route: this.routes[i].route,
                     fragment: pFragment,
@@ -55,7 +47,7 @@ var RouterView = {
 
     start: function () {
         var self = this;
-        var current = self.getFragment();
+        var current = null;//self.getFragment();
         var fn = function () {
             if (current !== self.getFragment()) {
                 current = self.getFragment();
@@ -67,6 +59,7 @@ var RouterView = {
         return this;
     },
 
+
     navigate: function (path) {
         path = path ? path : "";
         if (this.mode === "history") {
@@ -76,6 +69,19 @@ var RouterView = {
             window.location.href = window.location.href.replace(re, this.hash + path);
         }
         return this;
-    }
+    },
 
+    getFragment: function () {
+        var fragment = "";
+        var re;
+
+        if (this.mode === "history") {
+            re = new RegExp("^(?:" + this.root + ")(.*?)(?:\\?.*)?\\/?$");
+            fragment = decodeURI(location.pathname + location.search).replace(re, "$1");
+        } else {
+            re = new RegExp(".*?" + this.hash + "\\/?(.*?)\\/?(?:\\?.*)\\/?$");
+            fragment = window.location.href.replace(re, "$1");
+        }
+        return fragment;
+    }
 };

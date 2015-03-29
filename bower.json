@@ -14,6 +14,9 @@
     "seo",
     "search engine"
   ],
+  "dependencies": {
+    "micro-mvc": "latest"
+  },
   "license": "MIT",
   "homepage": "http://www.uneak.fr",
   "ignore": [
